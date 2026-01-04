@@ -30,4 +30,5 @@ Route::middleware('auth:api')->group(function () {
     Route::apiResource('products', ProductController::class);
     Route::apiResource('orders', OrderController::class)->only(['index','show']);
     Route::post('uploads', [ImageController::class, 'upload']);
+    Route::get('export', [OrderController::class, 'export']);
 });
