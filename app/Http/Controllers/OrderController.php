@@ -22,4 +22,46 @@ class OrderController extends Controller
         return new OrderResource(Order::findOrFail($id));
     }
 
+    // create function export to download file order
+    public function export()
+    {
+        // header
+        $headers = [
+            "Content-type" => "text/cv",
+            "Content-Disposition" => "attachment; filename=orders.cv",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0",
+        ];
+        // callback
+        $callback = function () {
+            // Get orders
+            $orders = Order::all();
+
+            // Open file with write permission
+            $file = fopen("php://output", "w");
+
+            // Create header row
+            fputcsv($file, ["ID", "Name", "Email", "Product Title", "Price", "Quantity"]);
+
+            // Attach body to header row
+            foreach ($orders as $order) {
+                foreach ($order->order_items as $orderItem) {
+                    fputcsv($file, [
+                        $order->id,
+                        $order->name,
+                        $order->email,
+                        $orderItem->product,
+                        $orderItem->price,
+                        $orderItem->quantity
+                    ]);
+                }
+            }
+
+            // Close the file after all data is written
+            fclose($file);
+        };
+
+        return \Response::stream($callback, 200, $headers);
+    }
 }

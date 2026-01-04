@@ -30,8 +30,24 @@ class Order extends Model
     protected $fillable = [
         'id',
     ];
-    public function order_items(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function order_items():  \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    //   get cal order items attribute
+    public function getTotalAttribute()
+    {
+        return $this->order_items->sum(
+            function( OrderItem $item) {
+                return  $item->price * $item->quantity;
+            }
+        );
+    }
+    public function getNameAttribute(): string
+    {
+        return $this->first_name . $this->last_name;
+    }
+
 }
+
