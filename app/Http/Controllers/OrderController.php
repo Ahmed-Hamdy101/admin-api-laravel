@@ -6,24 +6,30 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use phpDocumentor\Reflection\Types\Collection;
+use Illuminate\Support\Facades\Gate;
 
 class OrderController extends Controller
 {
     public function index()
     {
+        // req gates for view  Orders
+        Gate::authorize('view', Order::class);
         $order = Order::with('order_items')->paginate(10);
         return OrderResource::collection($order);
     }
 
     public function show($id)
     {
-     //show id order
+        // req gates for view  one single order
+        Gate::authorize('view', Order::class);
+        //show single order
         return new OrderResource(Order::findOrFail($id));
     }
 
     // create function export to download file order
     public function export()
     {
+             Gate::authorize('view', Order::class);
         // header
         $headers = [
             "Content-Type"        => "text/csv",
