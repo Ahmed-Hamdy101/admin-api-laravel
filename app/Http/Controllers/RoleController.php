@@ -7,7 +7,7 @@ use App\Http\Resources\RoleResources;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-
+use Illuminate\Support\Facades\Gate;
 class RoleController extends Controller
 {
     /**
@@ -15,6 +15,7 @@ class RoleController extends Controller
      */
     public function index()
     {
+        Gate::authorize('view', Role::class);
         return RoleResources::collection(Role::paginate(10));
     }
 
@@ -23,6 +24,7 @@ class RoleController extends Controller
      */
         public function store(CreateRoleRequest $request)
         {
+            Gate::authorize('edit', Role::class);
             return \DB::transaction(function () use ($request) {
                 // 1. Create the role
                 $role = Role::create([
@@ -48,6 +50,7 @@ class RoleController extends Controller
      */
     public function show(string $id)
     {
+        Gate::authorize('view', Role::class);
         return new RoleResources(Role::findOrFail($id));
     }
 
@@ -56,6 +59,7 @@ class RoleController extends Controller
      */
         public function update(Request $request, string $id)
         {
+            Gate::authorize('edit', Role::class);
             $role = Role::findOrFail($id);
 
             // 1. Update the role name
@@ -73,8 +77,8 @@ class RoleController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
-
-    {  
+    {
+        Gate::authorize('edit', Role::class);
         \DB::table('role_permissions')->where('role_id',$id)->delete(); 
         Role::destroy($id); 
         return response()->json(['message' => 'Role deleted successfully'], Response::HTTP_OK);
