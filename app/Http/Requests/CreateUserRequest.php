@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Requests;
-
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateUserRequest extends FormRequest
@@ -11,7 +11,8 @@ class CreateUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // req gates for edit  Users
+        return Gate::allows('edit', \App\Models\User::class);
     }
 
     /**
