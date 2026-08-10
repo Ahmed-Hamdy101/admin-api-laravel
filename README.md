@@ -8,7 +8,7 @@ A production-ready **Laravel REST API** for admin dashboard backends, featuring 
 [![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php)](https://php.net)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)](https://docker.com)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-
+[![Laravel](https://github.com/Ahmed-Hamdy101/laravel-rest-api/actions/workflows/laravel.yml/badge.svg)](https://github.com/Ahmed-Hamdy101/laravel-rest-api/actions/workflows/laravel.yml)
 ---
 
 ## Features
