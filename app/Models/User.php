@@ -64,13 +64,16 @@ class User extends Authenticatable
 
     // permission check
 
-    public function permissions()
-    {
-        return $this->role?->permissions->pluck('name') ?? collect();
-    }
 
-    public function hasPermission(string $permission): bool
-    {
-        return $this->role ? $this->role->permissions()->where('name', $permission)->exists() : false;
-    }
+        public function permissions()
+        {
+            // Returns a Collection of permission names, e.g., ['edit_posts', 'delete_posts']
+            return $this->role?->permissions->pluck('name') ?? collect();
+        }
+
+        public function hasPermission(string $permission): bool
+        {
+            // Checks the collection in memory. No extra database queries!
+            return $this->permissions()->contains($permission);
+        }
 }
