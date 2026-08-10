@@ -47,4 +47,5 @@ jobs:
       env:
         DB_CONNECTION: sqlite
         DB_DATABASE: database/database.sqlite
+        DB_HOST: 127.0.0.1  # Prevents Laravel from reading 'db' from .env
       run: php artisan test
