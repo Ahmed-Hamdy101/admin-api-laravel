@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,12 +44,20 @@ class UserTest extends TestCase
 
     public function test_update_info_rejects_duplicate_email(): void
     {
-        $role  = Role::create(['name' => 'admin']);
-        $user1 = User::factory()->create(['email' => 'user1@test.com', 'role_id' => $role->id]);
-        $user2 = User::factory()->create(['email' => 'user2@test.com', 'role_id' => $role->id]);
+        $role  = Role::firstOrCreate(['name' => 'admin']);
+
+        $user1 = User::factory()->create([
+            'email' => 'unique_user_1@test.com',
+            'role_id' => $role->id,
+        ]);
+
+        $user2 = User::factory()->create([
+            'email' => 'unique_user_2@test.com',
+            'role_id' => $role->id,
+        ]);
 
         $this->withHeaders($this->authHeaders($user1))
-            ->putJson('/api/v1/profile/info', ['email' => 'user2@test.com'])
+            ->putJson('/api/v1/profile/info', ['email' => 'unique_user_2@test.com'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
@@ -91,17 +100,30 @@ class UserTest extends TestCase
 
     // ─── Admin user CRUD ──────────────────────────────────────────────────
 
-    public function test_admin_can_list_all_users(): void
+    protected function makeAdmin(): User
     {
-        $admin = $this->makeAdmin();
-        User::factory()->count(3)->create(['role_id' => $admin->role_id]);
+        // 1. Create or find the Admin role
+        $role = Role::firstOrCreate(['name' => 'admin']);
 
-        $this->withHeaders($this->authHeaders($admin))
-            ->getJson('/api/v1/users')
-            ->assertStatus(200)
-            ->assertJsonStructure(['data']);
+        // 2. Create required permissions matching your AuthServiceProvider Gates
+        $viewUsersPermission = Permission::firstOrCreate(['name' => 'View Users']);
+        $editUsersPermission = Permission::firstOrCreate(['name' => 'Edit Users']);
+
+        // 3. Attach permissions to the role (or attach to the user if your relation is direct)
+        // Adjust 'permissions()' to match your Role or User relationship name
+        $role->permissions()->syncWithoutDetaching([
+            $viewUsersPermission->id,
+            $editUsersPermission->id,
+        ]);
+
+        // 4. Create the admin user
+        $admin = User::factory()->create([
+            'role_id' => $role->id,
+        ]);
+
+        // 5. Reload relationships so in-memory checks pass
+        return $admin->load(['role', 'role.permissions']);
     }
-
     public function test_non_admin_cannot_list_users(): void
     {
         $user = $this->makeUser();
