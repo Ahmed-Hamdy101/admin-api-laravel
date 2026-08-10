@@ -12,7 +12,8 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Tests\Integration\Http\Resources\JsonApi\Fixtures\UserResource;
+
+use Illuminate\Support\Facades\Gate;
 
 // UserController handles CRUD and profile-related actions for users
 class UserController extends Controller
@@ -23,17 +24,24 @@ class UserController extends Controller
      */
     public function index(): JsonResponse
     {
-        \Gate::authorize('view','users');
-        $user = User::with('role')->paginate(10);
-        return response()->json(UserResources::collection($user), 200);
+       Gate::authorize('view', User::class);
+
+        $users = User::with('role')->paginate(10);
+
+        return response()->json(
+            UserResources::collection($users), 
+            200
+        );
     }
 
     /**
      * Show a single user by ID.
      * Example: GET /api/users/5
      */
-    public function show($id): JsonResponse
+    public function show( int $id): JsonResponse
     {
+        // define who can access to it 
+         Gate::authorize('view', User::class);
         // Find user by primary key (id)
         $user = User::find($id);
 
@@ -53,6 +61,7 @@ class UserController extends Controller
      */
     public function store(CreateUserRequest $request): JsonResponse
     {
+           Gate::authorize('edit', User::class);
         // Get only allowed fields from request
         $data = $request->only(['f_name', 'l_name', 'email','role_id']);
 
@@ -70,8 +79,10 @@ class UserController extends Controller
      * Update an existing user by ID.
      * Example: PUT /api/users/5
      */
-    public function update(UpdateUserRequest $request, $id): JsonResponse
+    public function update(UpdateUserRequest $request, int $id): JsonResponse
     {
+        // define who can access to it Admin | Editor
+          Gate::authorize('edit', User::class);
         // Find the user
         $user = User::find($id);
 
@@ -99,8 +110,10 @@ class UserController extends Controller
      * Delete a user by ID.
      * Example: DELETE /api/users/5
      */
-    public function destroy($id): JsonResponse
+    public function destroy( int $id): JsonResponse
     {
+        // define who can access to it Admin | Editor
+          Gate::authorize('edit', User::class);
         // Find user
         $user = User::find($id);
 
@@ -119,13 +132,12 @@ class UserController extends Controller
     /**
      * Example: GET /api/user (with token)
      */
-     // Change JsonResponse to object, or remove the type hint entirely
+     // Get currently authenticated user
         public function user(): JsonResponse
             {
                 $user = \Auth::user();
                 
-                // FIXED: Changed 'data' to 'meta' to stop JSON key overwriting conflicts,
-                // and chained ->response() so it strictly honors the JsonResponse return type.
+                // RETURN USER PERMISSIONS
                 return (new UserResources($user))->additional([
                     'meta' => [
                         'permissions' => $user->permissions()
