@@ -13,6 +13,23 @@ abstract class TestCase extends BaseTestCase
     use CreatesApplication;
     use RefreshDatabase;
 
+
+
+    /**
+     *  Set up the test environment.  
+    */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Default JSON header on ALL test requests
+        $this->withHeaders(['Accept' => 'application/json']);
+
+        // Seed roles required by endpoints
+        Role::firstOrCreate(['name' => 'admin']);
+        Role::firstOrCreate(['name' => 'editor']);
+        Role::firstOrCreate(['name' => 'user']);
+    }
+
     /**
      * Create and authenticate an admin user, return token.
      */
