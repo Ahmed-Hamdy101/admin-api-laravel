@@ -5,28 +5,15 @@ namespace Tests\Feature;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
+    
 
-protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Generate Passport Keys if using Passport tokens
-        Artisan::call('passport:client', ['--personal' => true, '--no-interaction' => true]);
-
-        //role ID 3 exists in the isolated test database
-        Role::firstOrCreate(
-            ['id' => 3],
-            ['name' => 'user']
-        );
-    }
+    // ─── Register ─────────────────────────────────────────────────────────
 
     public function test_user_can_register_with_valid_data(): void
     {
@@ -60,7 +47,8 @@ protected function setUp(): void
 
     public function test_register_fails_with_duplicate_email(): void
     {
-        $role = Role::create(['name' => 'user']);
+        // Role is already created in TestCase, so we can just grab it
+        $role = Role::where('name', 'user')->first();
         User::factory()->create(['email' => 'ahmed@test.com', 'role_id' => $role->id]);
 
         $this->postJson('/api/v1/register', [
@@ -93,7 +81,7 @@ protected function setUp(): void
 
         $response = $this->postJson('/api/v1/login', [
             'email'    => $admin->email,
-            'password' => 'password',
+            'password' => 'password', // Assuming factory sets 'password'
         ]);
 
         $response->assertStatus(200)
