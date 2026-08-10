@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -12,7 +13,20 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    // ─── Register ─────────────────────────────────────────────────────────
+
+protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Generate Passport Keys if using Passport tokens
+        Artisan::call('passport:client', ['--personal' => true, '--no-interaction' => true]);
+
+        //role ID 3 exists in the isolated test database
+        Role::firstOrCreate(
+            ['id' => 3],
+            ['name' => 'user']
+        );
+    }
 
     public function test_user_can_register_with_valid_data(): void
     {
@@ -31,7 +45,10 @@ class AuthTest extends TestCase
                 'user' => ['id', 'full_name', 'email'],
             ]);
 
-        $this->assertDatabaseHas('users', ['email' => 'ahmed@test.com']);
+        $this->assertDatabaseHas('users', [
+            'email'   => 'ahmed@test.com',
+            'role_id' => 3,
+        ]);
     }
 
     public function test_register_fails_with_missing_fields(): void
