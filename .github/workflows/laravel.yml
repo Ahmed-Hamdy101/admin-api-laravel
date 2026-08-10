@@ -39,6 +39,7 @@ jobs:
         mkdir -p database
         touch database/database.sqlite
         php artisan migrate --force
+        php artisan db:seed --force # <--- ADD THIS STEP
 
     - name: Generate Passport Keys
       run: php artisan passport:keys --force
