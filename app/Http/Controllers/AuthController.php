@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
-
+use App\Models\Role;
 class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
@@ -39,10 +39,14 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $data             = $request->only(['f_name', 'l_name', 'email']);
+        $data = $request->only(['f_name', 'l_name', 'email']);
         $data['password'] = Hash::make($request->input('password'));
-        $data['role_id'] = $request->input('role_id', 3); // Default to role_id 2 if not passed
-        $user  = User::create($data);
+
+        // Find default role or assign fallback ID (e.g. 2 for standard user)
+        $defaultRole = Role::where('name', 'user')->first();
+        $data['role_id'] = $defaultRole ? $defaultRole->id : 3;
+
+        $user = User::create($data);
         $token = $user->createToken('admin')->accessToken;
 
         return response()->json([
