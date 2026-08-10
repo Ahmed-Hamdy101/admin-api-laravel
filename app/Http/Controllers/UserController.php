@@ -148,19 +148,18 @@ class UserController extends Controller
      * Update logged-in user’s profile info.
      * Example: PUT /api/user/info
      */
-    public function updateInfo(Request $request): JsonResponse
+    public function updateInfo(UpdateUserRequest $request) // 2. Type-hint it here
     {
-        // Get currently authenticated user
-         $user = \Auth::user();
+        // 3. Obtain ONLY the validated fields
+        $validated = $request->validated();
 
-        // Extract only fields we want to allow
-        $data = $request->only(['f_name', 'l_name', 'email']);
+        $user = $request->user();
+        $user->update($validated);
 
-        // Update user in DB
-        $user->update($data);
-
-        // Return updated user
-        return response()->json(new UserResources($user), 202);
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'data'    => $user
+        ], 202);
     }
 
     /**
