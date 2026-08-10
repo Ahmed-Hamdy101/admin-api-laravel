@@ -21,10 +21,11 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Default JSON header on ALL test requests
+
+        // 1. Send Accept: application/json header automatically
         $this->withHeaders(['Accept' => 'application/json']);
 
-        // Seed roles required by endpoints
+        // 2. Seed default roles so registration works
         Role::firstOrCreate(['name' => 'admin']);
         Role::firstOrCreate(['name' => 'editor']);
         Role::firstOrCreate(['name' => 'user']);
