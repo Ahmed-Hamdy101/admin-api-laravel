@@ -2,53 +2,54 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\ValidationException;
+use League\OAuth2\Server\Exception\OAuthServerException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class Handler extends ExceptionHandler
 {
-    /**
-     * The list of the inputs that are never flashed to the session on validation exceptions.
-     *
-     * @var array<int, string>
-     */
     protected $dontFlash = [
         'current_password',
         'password',
         'password_confirmation',
     ];
 
-    /**
-     * Register the exception handling callbacks for the application.
-     */
     public function register(): void
     {
-        $this->renderable(function (Throwable $e) {
-
-            // 1. Let Laravel handle validation exceptions properly with 422
-            if ($e instanceof ValidationException) {
+        // 1. Handle Validation Exceptions
+        $this->renderable(function (ValidationException $e, $request) {
+            if ($request->wantsJson() || $request->is('api/*')) {
                 return response()->json([
-                    'message' => $e->getMessage(),
+                    'message' => 'The given data was invalid.',
                     'errors'  => $e->errors(),
-                ], Response::HTTP_UNPROCESSABLE_ENTITY); // Integer 422
+                ], Response::HTTP_UNPROCESSABLE_ENTITY); // 422
             }
+        });
 
-            // 2. Extract status code safely for HTTP exceptions
-            $code = method_exists($e, 'getStatusCode') 
-                ? $e->getStatusCode() 
-                : (int) $e->getCode();
-
-            // 3. Ensure the code is a valid HTTP status range (100–599)
-            if ($code < 100 || $code > 599) {
-                $code = Response::HTTP_BAD_REQUEST; // Default 400
+        // 2. Handle Unauthenticated / Missing Tokens
+        $this->renderable(function (AuthenticationException|OAuthServerException $e, $request) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthenticated.'
+                ], Response::HTTP_UNAUTHORIZED); // 401
             }
+        });
 
-            // 4. Return clean JSON response with guaranteed integer status
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], $code);
+        // 3. Catch-all for other throwables (only for API requests)
+        $this->renderable(function (Throwable $e, $request) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                $code = $e instanceof HttpExceptionInterface 
+                    ? $e->getStatusCode() 
+                    : Response::HTTP_INTERNAL_SERVER_ERROR; // Default to 500 for unhandled exceptions
+
+                return response()->json([
+                    'error' => $e->getMessage(),
+                ], $code);
+            }
         });
     }
 }
