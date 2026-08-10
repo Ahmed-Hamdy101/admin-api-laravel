@@ -6,6 +6,9 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 
 abstract class TestCase extends BaseTestCase
@@ -18,52 +21,56 @@ abstract class TestCase extends BaseTestCase
     /**
      *  Set up the test environment.  
     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+        protected function setUp(): void
+            {
+                parent::setUp();
 
-        // 1. Send Accept: application/json header automatically
-        $this->withHeaders(['Accept' => 'application/json']);
+                Artisan::call('passport:keys', ['--force' => true, '--no-interaction' => true]);
 
-        // 2. Seed default roles so registration works
-        Role::firstOrCreate(['name' => 'admin']);
-        Role::firstOrCreate(['name' => 'editor']);
-        Role::firstOrCreate(['name' => 'user']);
-    }
+                $client = app(ClientRepository::class)->createPersonalAccessClient(
+                    null, 'Test Client', 'http://localhost'
+                );
+                
+                config(['passport.personal_access_client.id' => $client->id]);
+                config(['passport.personal_access_client.secret' => $client->secret]);
 
-    /**
-     * Create and authenticate an admin user, return token.
-     */
-    protected function makeAdmin(): User
-    {
-        $role = Role::create(['name' => 'admin']);
-        return User::factory()->create(['role_id' => $role->id]);
-    }
+                // Guarded against unique constraint duplicates entirely
+                Role::firstOrCreate(['name' => 'admin']);
+                Role::firstOrCreate(['name' => 'editor']);
+                Role::firstOrCreate(['name' => 'user']);
+            }
 
-    /**
-     * Create and authenticate an editor user.
-     */
-    protected function makeEditor(): User
-    {
-        $role = Role::create(['name' => 'editor']);
-        return User::factory()->create(['role_id' => $role->id]);
-    }
-
-    /**
-     * Create a plain authenticated user with no special role.
-     */
-    protected function makeUser(): User
-    {
-        $role = Role::create(['name' => 'user']);
-        return User::factory()->create(['role_id' => $role->id]);
-    }
-
-    /**
-     * Return headers for an authenticated user using Passport.
-     */
     protected function authHeaders(User $user): array
-    {
-        Passport::actingAs($user);
-        return ['Accept' => 'application/json'];
+        {
+            $token = $user->createToken('test-token')->accessToken;
+
+            return [
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json',
+            ];
+        }
+        protected function makeAdmin(): User
+        {
+            // 1. Ensure the admin role exists
+            $role = Role::firstOrCreate(['name' => 'admin']);
+
+            // 2. Create the user assigned to that role
+            $user = User::factory()->create([
+                'role_id' => $role->id,
+            ]);
+
+            // 3. Eager load the role relationship
+            return $user->load('role');
+        }
+        protected function makeEditor(): User
+        {
+            $role = Role::firstOrCreate(['name' => 'editor']);
+            return User::factory()->create(['role_id' => $role->id])->load('role');
+        }
+
+        protected function makeUser(): User
+        {
+            $role = Role::firstOrCreate(['name' => 'user']);
+            return User::factory()->create(['role_id' => $role->id])->fresh(['role']);
+        }
     }
-}
