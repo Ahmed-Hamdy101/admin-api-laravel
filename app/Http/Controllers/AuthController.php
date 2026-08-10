@@ -41,7 +41,7 @@ class AuthController extends Controller
     {
         $data             = $request->only(['f_name', 'l_name', 'email']);
         $data['password'] = Hash::make($request->input('password'));
-
+        $data['role_id'] = $request->input('role_id', 3); // Default to role_id 2 if not passed
         $user  = User::create($data);
         $token = $user->createToken('admin')->accessToken;
 
