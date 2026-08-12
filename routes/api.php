@@ -8,7 +8,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PermissionController;
-
+use App\Http\Controllers\DashboardController;
 /*
 |--------------------------------------------------------------------------
 | API Routes — v1
@@ -23,7 +23,7 @@ Route::prefix('v1')->group(function () {
 
     // ─── Authenticated ────────────────────────────────────────────────────
     Route::middleware('auth:api')->group(function () {
-
+        // Dashboard chart
         // Logout
         Route::post('logout', [AuthController::class, 'logout']);
 
@@ -44,6 +44,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:Admin,Editor')->group(function () {
             Route::apiResource('products', ProductController::class);
             Route::post('uploads', [ImageController::class, 'upload']);
+            Route::get('chart', [DashboardController::class, 'chart']);
+
         });
 
         // ─── Any authenticated user ───────────────────────────────────────
