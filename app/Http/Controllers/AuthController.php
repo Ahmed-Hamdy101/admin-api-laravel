@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\Role;
+
 class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
@@ -22,6 +23,7 @@ class AuthController extends Controller
         if (Auth::attempt($request->only('email', 'password'))) {
             $user  = Auth::user()->load('role');
             $token = $user->createToken('admin')->accessToken;
+            $cookie = cookie('jwt', $token, 60 * 24);
 
             return response()->json([
                 'token' => $token,
@@ -31,10 +33,13 @@ class AuthController extends Controller
                     'email'     => $user->email,
                     'role'      => $user->role?->name,
                 ],
-            ]);
+            ])->withCookie($cookie);
         }
 
-        return response()->json(['error' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
+        return response()->json(
+            ['error' => 'Invalid credentials'],
+            Response::HTTP_UNAUTHORIZED
+        );
     }
 
     public function register(RegisterRequest $request): JsonResponse
@@ -56,15 +61,17 @@ class AuthController extends Controller
                 'id'        => $user->id,
                 'full_name' => trim("{$user->f_name} {$user->l_name}"),
                 'email'     => $user->email,
-                'role'      => $user->role?->name,
+                'role'      => optional($user->role)->name,
             ],
         ], Response::HTTP_CREATED);
     }
 
-    public function logout(Request $request): JsonResponse
+    public function logout(): JsonResponse
     {
-        $request->user()->token()->revoke();
+        $cookie = \Cookie::forget('jwt');
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json([
+                'message' => 'Successfully logged out',
+        ])->withCookie($cookie);
     }
 }
