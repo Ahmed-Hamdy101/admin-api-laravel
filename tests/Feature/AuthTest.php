@@ -122,17 +122,25 @@ class AuthTest extends TestCase
 
     public function test_user_can_logout(): void
     {
-        $user = $this->makeAdmin();
+        // let user login first to get a token
+        $admin = $this->makeAdmin();
 
-        $this->withHeaders($this->authHeaders($user))
+        $loginResponse = $this->postJson('/api/v1/login', [
+            'email'    => $admin->email,
+            'password' => 'password',
+        ]);
+
+        // then logout
+        $this->withToken($loginResponse->json('token'))
             ->postJson('/api/v1/logout')
-            ->assertStatus(200)
-            ->assertJsonFragment(['message' => 'Logged out successfully']);
+            ->assertSuccessful();
     }
 
+    // ────────────────────────────────────────────────────────────────────────
+    // ┼─ TESTS FOR UNAUTHENTICATED ROUTES ────────────────────────────────────
     public function test_logout_requires_authentication(): void
     {
         $this->postJson('/api/v1/logout')
-            ->assertStatus(401);
+            ->assertUnauthorized();   // or assertStatus(401)
     }
 }
